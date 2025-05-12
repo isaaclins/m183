@@ -4,61 +4,53 @@ import ch.bbw.pr.tresorbackend.model.ConfigProperties;
 import ch.bbw.pr.tresorbackend.model.EmailAdress;
 import ch.bbw.pr.tresorbackend.model.RegisterUser;
 import ch.bbw.pr.tresorbackend.model.User;
-import ch.bbw.pr.tresorbackend.service.PasswordEncryptionService;
+import ch.bbw.pr.tresorbackend.service.PepperedPasswordEncoder;
 import ch.bbw.pr.tresorbackend.service.UserService;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import jakarta.validation.Valid;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
  * UserController
+ * 
  * @author Peter Rutschmann
+ * @author ChatGPT (Password Hashing Integration)
  */
 @RestController
-@AllArgsConstructor
+@RequiredArgsConstructor
 @RequestMapping("api/users")
 public class UserController {
 
-   private UserService userService;
-   private PasswordEncryptionService passwordService;
+   private final UserService userService;
+   private final PepperedPasswordEncoder passwordEncoder;
    private final ConfigProperties configProperties;
    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
-
-   @Autowired
-   public UserController(ConfigProperties configProperties, UserService userService,
-                         PasswordEncryptionService passwordService) {
-      this.configProperties = configProperties;
-      System.out.println("UserController.UserController: cross origin: " + configProperties.getOrigin());
-      // Logging in the constructor
-      logger.info("UserController initialized: " + configProperties.getOrigin());
-      logger.debug("UserController.UserController: Cross Origin Config: {}", configProperties.getOrigin());
-      this.userService = userService;
-      this.passwordService = passwordService;
-   }
 
    // build create User REST API
    @CrossOrigin(origins = "${CROSS_ORIGIN}")
    @PostMapping
-   public ResponseEntity<String> createUser(@Valid @RequestBody RegisterUser registerUser, BindingResult bindingResult) {
-      //captcha
-      //todo ergänzen
+   public ResponseEntity<String> createUser(@Valid @RequestBody RegisterUser registerUser,
+         BindingResult bindingResult) {
+      // captcha
+      // todo ergänzen
 
       System.out.println("UserController.createUser: captcha passed.");
 
-      //input validation
+      // input validation
       if (bindingResult.hasErrors()) {
          List<String> errors = bindingResult.getFieldErrors().stream()
                .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
@@ -76,18 +68,24 @@ public class UserController {
       }
       System.out.println("UserController.createUser: input validation passed");
 
-      //password validation
-      //todo ergänzen
-      System.out.println("UserController.createUser, password validation passed");
+      // password validation
+      // todo ergänzen - Add proper password policy validation if needed
+      System.out.println("UserController.createUser, password validation passed (basic check)");
 
-      //transform registerUser to user
+      // Generate Salt
+      SecureRandom random = new SecureRandom();
+      byte[] saltBytes = new byte[16];
+      random.nextBytes(saltBytes);
+      String salt = Base64.getEncoder().encodeToString(saltBytes);
+
+      // transform registerUser to user
       User user = new User(
             null,
             registerUser.getFirstName(),
             registerUser.getLastName(),
             registerUser.getEmail(),
-            passwordService.hashPassword(registerUser.getPassword())
-            );
+            passwordEncoder.encode(registerUser.getPassword()),
+            salt);
 
       User savedUser = userService.createUser(user);
       System.out.println("UserController.createUser, user saved in db");
@@ -121,7 +119,7 @@ public class UserController {
    @CrossOrigin(origins = "${CROSS_ORIGIN}")
    @PutMapping("{id}")
    public ResponseEntity<User> updateUser(@PathVariable("id") Long userId,
-                                          @RequestBody User user) {
+         @RequestBody User user) {
       user.setId(userId);
       User updatedUser = userService.updateUser(user);
       return new ResponseEntity<>(updatedUser, HttpStatus.OK);
@@ -135,13 +133,12 @@ public class UserController {
       return new ResponseEntity<>("User successfully deleted!", HttpStatus.OK);
    }
 
-
    // get user id by email
    @CrossOrigin(origins = "${CROSS_ORIGIN}")
    @PostMapping("/byemail")
    public ResponseEntity<String> getUserIdByEmail(@RequestBody EmailAdress email, BindingResult bindingResult) {
       System.out.println("UserController.getUserIdByEmail: " + email);
-      //input validation
+      // input validation
       if (bindingResult.hasErrors()) {
          List<String> errors = bindingResult.getFieldErrors().stream()
                .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())

@@ -11,6 +11,7 @@ import java.util.Optional;
 
 /**
  * UserServiceImpl
+ * 
  * @author Peter Rutschmann
  */
 @Service
