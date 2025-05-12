@@ -35,6 +35,23 @@ parse_jdbc_url() {
     [[ -z "$DB_PORT" ]] && DB_PORT="3306"
 }
 
+# Function to kill processes on a given port
+kill_on_port() {
+    local port=$1
+    echo "Checking for processes on port $port..."
+    # Use lsof to find PIDs listening on the port. -t gives only PIDs.
+    # Use || true to prevent script exit if lsof finds nothing (exit code 1)
+    local pids=$(lsof -t -i:$port || true)
+    if [[ -n "$pids" ]]; then
+        echo "Killing processes on port $port with PIDs: $pids"
+        # Use xargs to handle multiple PIDs properly
+        echo "$pids" | xargs kill -9
+        sleep 2 # Give a moment for ports to be released
+    else
+        echo "No processes found on port $port."
+    fi
+}
+
 # --- Prerequisites Check ---
 
 echo "Checking prerequisites..."
@@ -182,6 +199,10 @@ echo "The password provided to this script is primarily for initial DB setup if 
 echo "If the backend also needs MYSQL_PWD set, it will be set from the argument/prompt."
 echo ""
 
+# Kill existing processes before starting new ones
+kill_on_port 8080 # Backend port
+kill_on_port 3000 # Frontend port
+
 # Re-ensure MYSQL_PWD is set for the backend process
 export MYSQL_PWD="$DB_PASS"
 
@@ -216,10 +237,7 @@ FRONTEND_PROC_PID=$!
 echo "Frontend starting with PID $FRONTEND_PROC_PID. Check logs for details."
 cd .. || { echo "Error: Failed to cd back to root from frontend"; kill $BACKEND_PROC_PID $FRONTEND_PROC_PID 2>/dev/null; unset MYSQL_PWD; exit 1; }
 
-# Unset MYSQL_PWD if it was set by this script (argument or prompt)
-# If MYSQL_PWD was pre-existing in the environment, this script shouldn't unset it globally.
-# However, the `export` commands above will have overridden it for the script's child processes.
-# For simplicity, just unset it if DB_PASS was derived (i.e., not from an initial MYSQL_PWD env).
+# Unset MYSQL_PWD if it was set by this script
 if [[ -n "$DB_PASS" && -z "${MYSQL_PWD_INIT_ENV}" ]]; then # Simplified: if DB_PASS was set by arg/prompt.
     # Storing initial MYSQL_PWD state is more robust, but this is simpler for now.
     echo "Clearing MYSQL_PWD environment variable set by script."

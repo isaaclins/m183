@@ -26,4 +26,19 @@ The main `README.md` is at the root: [README.md](mdc:README.md).
     *   The explanation will be written in **English**.
 4.  **Evaluation:** Remember that both the implementation and the documentation are evaluated according to the criteria mentioned in the assignment overview. Focus on security, standard practices, and clear documentation, but specifically the EXACT REQUEST THAT WAS GIVEN.
 
+## Documentation Standards (Inspired by 'all users' Example)
+
+In addition to the workflow steps, documentation for each task should adhere to the following standards, using the 'all users' implementation example as a reference guide:
+
+*   **Content Focus:** Document the **essence** of research and implementation for the task. Ensure all required topics are covered adequately.
+*   **Scope:** Explain changes and logic across both **Frontend** (`183_12_2_tresorfrontend_rupe-master`) and **Backend** (`183_12_1_tresorbackend_rupe-master`) where applicable.
+*   **Format:** Use Markdown, stored within the `documentation/solution/` directory as incrementally numbered files (e.g., `01_task_description.md`, `02_another_task.md`).
+*   **Structure & Elements:** Include relevant elements to clearly explain the WHAT and HOW:
+    *   Textual descriptions of the changes and implementation steps.
+    *   Sequence diagrams (Ablauf) to illustrate flow and interactions between components (Frontend <-> Backend).
+    *   Component/Class diagrams (Komponenten und Klassen) to show structure and dependencies.
+    *   Relevant **code snippets** (Details zum Code) to illustrate key implementation points. Use diffs for modifications where appropriate.
+    *   Screenshots for UI changes or results where applicable.
+*   **Goal:** Provide a clear, concise, and reproducible explanation of the implemented solution, demonstrating adherence to standard practices and fulfillment of task requirements.
+
 
