@@ -19,12 +19,11 @@ The main `README.md` is at the root: [README.md](mdc:README.md).
 ## Workflow
 
 1.  **Task Assignment:** The user will provide specific tasks, often related to implementing security features or other requirements based on the assignment brief (details visible in the initial conversation screenshot).
-2.  **Implementation & Testing:** The AI (Gemini) will implement the required changes in the frontend and/or backend code, including writing or updating tests.
-3.  **Documentation:** For each task, the AI will create a **new, incrementally numbered Markdown file** (e.g., `01_task_description.md`, `02_another_task.md`) in a dedicated documentation directory (to be created, perhaps `/documentation`). This file will detail:
-    *   **WHAT** changes were made.
-    *   **WHY** these changes were necessary.
+2.  **Implementation & Testing:** You will implement the required changes in the frontend and/or backend code, including writing or updating tests.
+3.  **Documentation:** For each task, you must create a **new, incrementally numbered Markdown file** (e.g., `01_task_description.md`, `02_another_task.md`) in a dedicated documentation directory (./documentation/solution/ AND ./documentation/task/). This file will detail:
+    *   **WHAT** changes were made. (exact line change, step by step)
     *   **HOW** the changes were implemented.
     *   The explanation will be written in **English**.
-4.  **Evaluation:** Remember that both the implementation and the documentation are evaluated according to the criteria mentioned in the assignment overview. Focus on security, standard practices, and clear documentation.
+4.  **Evaluation:** Remember that both the implementation and the documentation are evaluated according to the criteria mentioned in the assignment overview. Focus on security, standard practices, and clear documentation, but specifically the EXACT REQUEST THAT WAS GIVEN.
 
 
