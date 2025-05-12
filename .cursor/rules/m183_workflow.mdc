@@ -1,0 +1,30 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# M183 Project Workflow and Structure
+
+This document outlines the structure and the agreed-upon workflow for the M183 project.
+
+## Project Structure
+
+The project consists of two main parts:
+
+1.  **Backend:** A Java Spring application located in [183_12_1_tresorbackend_rupe-master](mdc:183_12_1_tresorbackend_rupe-master).
+2.  **Frontend:** A web frontend located in [183_12_2_tresorfrontend_rupe-master](mdc:183_12_2_tresorfrontend_rupe-master).
+
+The main `README.md` is at the root: [README.md](mdc:README.md).
+
+## Workflow
+
+1.  **Task Assignment:** The user will provide specific tasks, often related to implementing security features or other requirements based on the assignment brief (details visible in the initial conversation screenshot).
+2.  **Implementation & Testing:** The AI (Gemini) will implement the required changes in the frontend and/or backend code, including writing or updating tests.
+3.  **Documentation:** For each task, the AI will create a **new, incrementally numbered Markdown file** (e.g., `01_task_description.md`, `02_another_task.md`) in a dedicated documentation directory (to be created, perhaps `/documentation`). This file will detail:
+    *   **WHAT** changes were made.
+    *   **WHY** these changes were necessary.
+    *   **HOW** the changes were implemented.
+    *   The explanation will be written in **English**.
+4.  **Evaluation:** Remember that both the implementation and the documentation are evaluated according to the criteria mentioned in the assignment overview. Focus on security, standard practices, and clear documentation.
+
+

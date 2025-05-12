@@ -1,0 +1,47 @@
+###
+#Get all users
+GET http://localhost:8080/api/users
+Accept: application/json
+
+###
+# Create user Violett Weber
+POST http://localhost:8080/api/users
+Content-Type: application/json
+
+{
+  "firstName": "Violett",
+  "lastName": "Weber",
+  "email": "violett.weber@bbw.ch",
+  "password": "1234",
+  "passwordConfirmation": "1234"
+}
+
+###
+#Get user with id 4
+GET http://localhost:8080/api/users/4
+Accept: application/json
+
+###
+# Update user with id 4
+PUT http://localhost:8080/api/users/4
+Content-Type: application/json
+
+{
+  "firstName": "Iris",
+  "lastName":"Weber",
+  "email": "iris.weber@bbw.ch"
+}
+
+###
+#Delete user with id 4
+DELETE http://localhost:8080/api/users/4
+Accept: application/json
+
+###
+# Post: get user by email
+POST http://localhost:8080/api/users/byemail
+Content-Type: application/json
+
+{
+  "email": "paula.kuster@bbw.ch"
+}
