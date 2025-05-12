@@ -88,7 +88,8 @@ if [[ -z "$DB_NAME" ]]; then
     exit 1
 fi
 
-# Determine DB Password DB_PASS="$DB_PASS_ARG"
+# Determine DB Password
+DB_PASS="$DB_PASS_ARG" # Assign password from argument $1
 
 if [[ -z "$DB_PASS" ]]; then
     if [[ -n "$MYSQL_PWD" ]]; then
