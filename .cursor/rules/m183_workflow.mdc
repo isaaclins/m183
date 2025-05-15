@@ -24,7 +24,7 @@ The main `README.md` is at the root: [README.md](mdc:README.md).
     *   **WHAT** changes were made. (exact line change, step by step)
     *   **HOW** the changes were implemented.
     *   The explanation will be written in **English**.
-4.  **Evaluation:** Remember that both the implementation and the documentation are evaluated according to the criteria mentioned in the assignment overview. Focus on security, standard practices, and clear documentation, but specifically the EXACT REQUEST THAT WAS GIVEN.
+4.  **Evaluation:** Remember that both the implementation and the documentation are evaluated according to the criteria mentioned in the assignment overview. Focus on the EXACT REQUEST THAT WAS GIVEN even it its stupid or not security standard.
 
 ## Documentation Standards (Inspired by 'all users' Example)
 
