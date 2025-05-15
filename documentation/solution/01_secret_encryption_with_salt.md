@@ -231,19 +231,24 @@ Below are sequence diagrams illustrating the key user and cryptographic flows wi
 sequenceDiagram
     actor Frontend
     participant UserController
+    participant PasswordEncryptionService
     participant UserServiceImpl
     participant UserRepository
     participant Database
 
     Frontend->>+UserController: POST /api/users (RegisterUser DTO)
-    UserController->>+UserServiceImpl: createUser(user)
+    UserController->>+PasswordEncryptionService: hashPassword(registerUser.password)
+    PasswordEncryptionService-->>-UserController: BCrypt Hashed Password
+    Note left of UserServiceImpl: User object is prepared with hashed password.
+    UserController->>+UserServiceImpl: createUser(user_with_hashed_password)
     UserServiceImpl->>UserServiceImpl: Generate AES Salt (16 random bytes, Base64 encoded)
     Note over UserServiceImpl: user.setSalt(generatedSalt)
-    UserServiceImpl->>+UserRepository: save(user)
+    UserServiceImpl->>+UserRepository: save(user_with_hashed_password_and_aes_salt)
     UserRepository->>+Database: INSERT User (email, BCrypt_hashed_password, aes_salt, ...)
     Database-->>-UserRepository: Saved User with ID
     UserRepository-->>-UserServiceImpl: Saved User with ID
     UserServiceImpl-->>-UserController: Saved User with ID
+    activate UserController
     UserController-->>-Frontend: HTTP 202 (User Saved)
 
 ```
