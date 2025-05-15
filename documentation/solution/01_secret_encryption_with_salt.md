@@ -373,8 +373,10 @@ sequenceDiagram
             Note right of EncryptUtil: Decrypts content using AES/CBC/PKCS5Padding with derived key and IV from encryptedSecret.content.
             EncryptUtil-->>-SecretController: Decrypted Content
         end
+        activate SecretController
         SecretController-->>-Frontend: HTTP 200 (List of Decrypted Secrets)
     else User or AES Salt Not Found
+        activate SecretController
         SecretController-->>-Frontend: HTTP 404 (Not Found) or HTTP 500
     end
 ```
