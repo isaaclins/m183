@@ -9,7 +9,7 @@ The data's are stored in a database.
 ### information about database
 
 prepare a database server and the database used by the application<br>
-see [tresordb.sql](tresordb.sql) for an example database<br>
+see [tresordb.sql](src/main/resources/tresordb.sql) for an example database<br>
 see [application.properties](src/main/resources/application.properties) about database access
 
 ## Requests examples

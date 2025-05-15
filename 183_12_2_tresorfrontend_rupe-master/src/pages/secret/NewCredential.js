@@ -7,6 +7,7 @@ import {postSecret} from "../../comunication/FetchSecrets";
  * @author Peter Rutschmann
  */
 function NewCredential({loginValues}) {
+    console.log("Login values in NewCredential:", loginValues)
     const initialState = {
         kindid: 1,
         kind:"credential",
@@ -14,6 +15,7 @@ function NewCredential({loginValues}) {
         password: "",
         url: ""
     };
+    console.log("Initial state in NewCredential:", initialState)
     const [credentialValues, setCredentialValues] = useState(initialState);
     const [errorMessage, setErrorMessage] = useState('');
 
@@ -22,17 +24,21 @@ function NewCredential({loginValues}) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setErrorMessage('');
-        console.log(loginValues)
         try {
-            const content = credentialValues;
-            await postSecret({loginValues, content});
+            const secretPayload = {
+                email: loginValues.email,
+                content: credentialValues,
+                encryptPassword: loginValues.password
+            };
+            console.log("FINAL: New secret in NewCredential:", secretPayload)
+            await postSecret(secretPayload);
             setCredentialValues(initialState);
             navigate('/secret/secrets');
         } catch (error) {
             console.error('Failed to fetch to server:', error.message);
             setErrorMessage(error.message);
         }
-    };
+    };    
 
     return (
         <div>

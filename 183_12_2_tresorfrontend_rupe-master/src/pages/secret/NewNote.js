@@ -22,8 +22,11 @@ function NewNote({loginValues}) {
         e.preventDefault();
         setErrorMessage('');
         try {
-            const content = noteValues;
-            await postSecret({loginValues, content});
+            await postSecret({
+                email: loginValues.email,
+                content: noteValues,
+                encryptPassword: loginValues.password
+            });
             setNoteValues(initialState);
             navigate('/secret/secrets');
         } catch (error) {

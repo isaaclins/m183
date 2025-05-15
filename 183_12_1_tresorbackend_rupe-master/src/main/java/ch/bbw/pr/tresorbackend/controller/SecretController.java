@@ -102,6 +102,7 @@ public class SecretController {
    @CrossOrigin(origins = "${CROSS_ORIGIN}")
    @PostMapping("/byemail")
    public ResponseEntity<List<Secret>> getSecretsByEmail(@RequestBody EncryptCredentials credentials) {
+      System.out.println("Yay in the controller");
       System.out.println("SecretController.getSecretsByEmail " + credentials);
 
       User user = userService.findByEmail(credentials.getEmail());

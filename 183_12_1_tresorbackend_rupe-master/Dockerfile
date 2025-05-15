@@ -31,10 +31,12 @@ RUN mvn clean package -Dmaven.test.skip=true
 #============
 
 # start with a small image
-FROM alpine:latest
+FROM debian:bullseye-slim
 
 # add JRE 17
-RUN apk add --no-cache openjdk17-jre
+RUN apt-get update && apt-get install -y --no-install-recommends openjdk-17-jre netcat \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set working directory 
 WORKDIR /App

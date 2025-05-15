@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 @SpringBootApplication
 public class TresorbackendApplication {
    public static void main(String[] args) {
+      System.out.println("TresorbackendApplication started");
       SpringApplication.run(TresorbackendApplication.class, args);
    }
 }

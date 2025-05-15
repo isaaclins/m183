@@ -40,6 +40,6 @@ docker build -t tresorfrontendimg .
 
 ```Bash
 docker run -p 80:80 --name tresorfrontend tresorfrontendimg
-
+```
 (c) 2024 P. Rutschmann
 
