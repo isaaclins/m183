@@ -8,9 +8,12 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
+import java.security.SecureRandom;
+import java.util.Base64;
 
 /**
  * UserServiceImpl
+ * 
  * @author Peter Rutschmann
  */
 @Service
@@ -21,6 +24,11 @@ public class UserServiceImpl implements UserService {
 
    @Override
    public User createUser(User user) {
+      // Generate a salt for the new user
+      SecureRandom random = new SecureRandom();
+      byte[] saltBytes = new byte[16]; // 16 bytes = 128 bits, a common salt length
+      random.nextBytes(saltBytes);
+      user.setSalt(Base64.getEncoder().encodeToString(saltBytes));
       return userRepository.save(user);
    }
 

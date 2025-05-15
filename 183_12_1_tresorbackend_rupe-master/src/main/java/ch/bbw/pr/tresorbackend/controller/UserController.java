@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 
 /**
  * UserController
+ * 
  * @author Peter Rutschmann
  */
 @RestController
@@ -39,7 +40,7 @@ public class UserController {
 
    @Autowired
    public UserController(ConfigProperties configProperties, UserService userService,
-                         PasswordEncryptionService passwordService) {
+         PasswordEncryptionService passwordService) {
       System.out.println("UserController.UserController: cross origin: " + configProperties.getOrigin());
       // Logging in the constructor
       logger.info("UserController initialized: " + configProperties.getOrigin());
@@ -50,13 +51,14 @@ public class UserController {
 
    // build create User REST API
    @PostMapping
-   public ResponseEntity<String> createUser(@Valid @RequestBody RegisterUser registerUser, BindingResult bindingResult) {
-      //captcha
-      //todo ergänzen
+   public ResponseEntity<String> createUser(@Valid @RequestBody RegisterUser registerUser,
+         BindingResult bindingResult) {
+      // captcha
+      // todo ergänzen
 
       System.out.println("UserController.createUser: captcha passed.");
 
-      //input validation
+      // input validation
       if (bindingResult.hasErrors()) {
          List<String> errors = bindingResult.getFieldErrors().stream()
                .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
@@ -74,18 +76,17 @@ public class UserController {
       }
       System.out.println("UserController.createUser: input validation passed");
 
-      //password validation
-      //todo ergänzen
+      // password validation
+      // todo ergänzen
       System.out.println("UserController.createUser, password validation passed");
 
-      //transform registerUser to user
-      User user = new User(
-            null,
-            registerUser.getFirstName(),
-            registerUser.getLastName(),
-            registerUser.getEmail(),
-            passwordService.hashPassword(registerUser.getPassword())
-            );
+      // transform registerUser to user
+      User user = new User(); // Use no-args constructor
+      user.setFirstName(registerUser.getFirstName());
+      user.setLastName(registerUser.getLastName());
+      user.setEmail(registerUser.getEmail());
+      user.setPassword(passwordService.hashPassword(registerUser.getPassword()));
+      // The salt will be set by UserServiceImpl.createUser()
 
       User savedUser = userService.createUser(user);
       System.out.println("UserController.createUser, user saved in db");
@@ -100,57 +101,57 @@ public class UserController {
    @PostMapping("/login")
    public ResponseEntity<String> doLoginUser(@RequestBody LoginUser loginUser, BindingResult bindingResult) {
       logger.info("UserController.doLoginUser: Attempting login for email: {}", loginUser.getEmail());
-      
+
       // Input validation
       if (bindingResult.hasErrors()) {
          List<String> errors = bindingResult.getFieldErrors().stream()
                .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
                .collect(Collectors.toList());
-         
+
          JsonArray arr = new JsonArray();
          errors.forEach(arr::add);
          JsonObject obj = new JsonObject();
          obj.add("message", arr);
          String json = new Gson().toJson(obj);
-         
+
          logger.error("UserController.doLoginUser: Validation failed: {}", json);
          return ResponseEntity.badRequest().body(json);
       }
-      
+
       // Find user by email
       User user = userService.findByEmail(loginUser.getEmail());
       if (user == null) {
          logger.warn("UserController.doLoginUser: No user found with email: {}", loginUser.getEmail());
-         
+
          JsonObject obj = new JsonObject();
          obj.addProperty("message", "Invalid email or password");
          String json = new Gson().toJson(obj);
-         
+
          return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(json);
       }
-      
+
       // Verify password
       boolean passwordMatches = passwordService.verifyPassword(loginUser.getPassword(), user.getPassword());
       if (!passwordMatches) {
          logger.warn("UserController.doLoginUser: Password mismatch for user: {}", user.getEmail());
-         
+
          JsonObject obj = new JsonObject();
          obj.addProperty("message", "Invalid email or password");
          String json = new Gson().toJson(obj);
-         
+
          return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(json);
       }
-      
+
       // Login successful
       logger.info("UserController.doLoginUser: Login successful for user ID: {}", user.getId());
-      
+
       JsonObject obj = new JsonObject();
       obj.addProperty("userId", user.getId());
       obj.addProperty("firstName", user.getFirstName());
       obj.addProperty("lastName", user.getLastName());
       obj.addProperty("email", user.getEmail());
       String json = new Gson().toJson(obj);
-      
+
       return ResponseEntity.ok().body(json);
    }
 
@@ -176,7 +177,7 @@ public class UserController {
    // http://localhost:8080/api/users/1
    @PutMapping("{id}")
    public ResponseEntity<User> updateUser(@PathVariable("id") Long userId,
-                                          @RequestBody User user) {
+         @RequestBody User user) {
       user.setId(userId);
       User updatedUser = userService.updateUser(user);
       return new ResponseEntity<>(updatedUser, HttpStatus.OK);
@@ -189,12 +190,11 @@ public class UserController {
       return new ResponseEntity<>("User successfully deleted!", HttpStatus.OK);
    }
 
-
    // get user id by email
    @PostMapping("/byemail")
    public ResponseEntity<String> getUserIdByEmail(@RequestBody EmailAdress email, BindingResult bindingResult) {
       System.out.println("UserController.getUserIdByEmail: " + email);
-      //input validation
+      // input validation
       if (bindingResult.hasErrors()) {
          List<String> errors = bindingResult.getFieldErrors().stream()
                .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
