@@ -6,6 +6,7 @@ import ch.bbw.pr.tresorbackend.model.LoginUser;
 import ch.bbw.pr.tresorbackend.model.RegisterUser;
 import ch.bbw.pr.tresorbackend.model.User;
 import ch.bbw.pr.tresorbackend.service.PasswordEncryptionService;
+import ch.bbw.pr.tresorbackend.service.ReCaptchaService;
 import ch.bbw.pr.tresorbackend.service.UserService;
 
 import com.google.gson.Gson;
@@ -36,17 +37,19 @@ public class UserController {
 
    private UserService userService;
    private PasswordEncryptionService passwordService;
+   private ReCaptchaService reCaptchaService;
    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
    @Autowired
    public UserController(ConfigProperties configProperties, UserService userService,
-         PasswordEncryptionService passwordService) {
+         PasswordEncryptionService passwordService, ReCaptchaService reCaptchaService) {
       System.out.println("UserController.UserController: cross origin: " + configProperties.getOrigin());
       // Logging in the constructor
       logger.info("UserController initialized: " + configProperties.getOrigin());
       logger.debug("UserController.UserController: Cross Origin Config: {}", configProperties.getOrigin());
       this.userService = userService;
       this.passwordService = passwordService;
+      this.reCaptchaService = reCaptchaService;
    }
 
    // build create User REST API
@@ -54,8 +57,13 @@ public class UserController {
    public ResponseEntity<String> createUser(@Valid @RequestBody RegisterUser registerUser,
          BindingResult bindingResult) {
       // captcha
-      // todo ergänzen
-
+      if (!reCaptchaService.verifyCaptcha(registerUser.getRecaptchaToken())) {
+         System.out.println("UserController.createUser: captcha validation failed.");
+         JsonObject obj = new JsonObject();
+         obj.addProperty("message", "ReCaptcha validation failed.");
+         String json = new Gson().toJson(obj);
+         return ResponseEntity.badRequest().body(json);
+      }
       System.out.println("UserController.createUser: captcha passed.");
 
       // input validation
@@ -77,7 +85,16 @@ public class UserController {
       System.out.println("UserController.createUser: input validation passed");
 
       // password validation
-      // todo ergänzen
+      List<String> passwordErrors = userService.validatePassword(registerUser.getPassword());
+      if (!passwordErrors.isEmpty()) {
+         System.out.println("UserController.createUser, password validation fails: " + passwordErrors);
+         JsonArray arr = new JsonArray();
+         passwordErrors.forEach(arr::add);
+         JsonObject obj = new JsonObject();
+         obj.add("message", arr);
+         String json = new Gson().toJson(obj);
+         return ResponseEntity.badRequest().body(json);
+      }
       System.out.println("UserController.createUser, password validation passed");
 
       // transform registerUser to user
