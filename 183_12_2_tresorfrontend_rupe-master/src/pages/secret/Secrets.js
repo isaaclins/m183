@@ -34,35 +34,54 @@ const Secrets = ({loginValues}) => {
         <>
             <h1>my secrets</h1>
             {errorMessage && <p style={{color: 'red'}}>{errorMessage}</p>}
-             <form>
-                <h2>secrets</h2>
-                <table border="1">
-                    <thead>
-                    <tr>
-                        <th>secret id</th>
-                        <th>user id</th>
-                        <th>content</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {secrets?.length > 0 ? (
-                        secrets.map(secret => (
-                            <tr key={secret.id}>
-                                <td>{secret.id}</td>
-                                <td>{secret.userId}</td>
-                                <td>
-                                    <pre>{JSON.stringify(secret.content, null, 2)}</pre>
-                                </td>
-                            </tr>
-                        ))
-                    ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <form>
+                    <h2>secrets</h2>
+                    <table border="1" style={{ margin: '0 auto' }}>
+                        <thead>
                         <tr>
-                            <td colSpan="3">No secrets available</td>
+                            <th>secret id</th>
+                            <th>user id</th>
+                            <th>content</th>
                         </tr>
-                    )}
-                    </tbody>
-                </table>
-            </form>
+                        </thead>
+                        <tbody>
+                        {secrets?.length > 0 ? (
+                            secrets.map(secret => (
+                                <tr key={secret.id}>
+                                    <td>{secret.id}</td>
+                                    <td>{secret.userId}</td>
+                                    <td style={{ textAlign: 'left', verticalAlign: 'top' }}>
+                                        {typeof secret.content === 'string' ? (
+                                            (() => {
+                                                try {
+                                                    const parsedContent = JSON.parse(secret.content);
+                                                    return Object.entries(parsedContent).map(([key, value]) => (
+                                                        <div key={key} style={{ marginBottom: '5px', padding: '2px' }}>
+                                                            <strong style={{ marginRight: '5px' }}>{key}:</strong>
+                                                            <span>{String(value)}</span>
+                                                        </div>
+                                                    ));
+                                                } catch (e) {
+                                                    console.error("Failed to parse secret content", e);
+                                                    return <pre>{secret.content}</pre>; // Fallback to raw display
+                                                }
+                                            })()
+                                        ) : (
+                                            <pre>{JSON.stringify(secret.content, null, 2)}</pre> // Fallback for non-string content
+                                        )}
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan="3">No secrets available</td>
+                            </tr>
+                        )}
+                        </tbody>
+                    </table>
+                </form>
+            </div>
         </>
     );
 };
