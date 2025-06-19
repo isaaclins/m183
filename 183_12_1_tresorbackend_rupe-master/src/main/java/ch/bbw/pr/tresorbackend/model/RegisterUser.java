@@ -1,7 +1,6 @@
 package ch.bbw.pr.tresorbackend.model;
 
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
@@ -29,5 +28,6 @@ public class RegisterUser {
    @NotEmpty (message="Password-confirmation is required.")
    private String passwordConfirmation;
 
-   private String recaptchaToken;
+   @NotEmpty (message="Captcha token is required.")
+   private String captchaToken;
 }
