@@ -1,5 +1,7 @@
 **/.env
-node_modules
 **/application.properties
+
+**/node_modules
+tresorapp-doc/.obsidian/workspace.json
 
 ~ ⋖,^><
