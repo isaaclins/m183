@@ -1,7 +1,6 @@
 package ch.bbw.pr.tresorbackend.model;
 
 import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Size;
 import lombok.*;
 
 /**
