@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   db:
@@ -11,6 +11,7 @@ services:
       - "3306:3306"
     volumes:
       - mariadb_data:/var/lib/mysql
+      - ./src/main/resources/tresordb.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
     networks:
       - tresor_app
@@ -26,11 +27,19 @@ services:
       - "8080:8080"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mariadb://db:3306/tresordb
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=1234
+      - SPRING_DATASOURCE_USERNAME=tresoruser
+      - SPRING_DATASOURCE_PASSWORD=tresorpass
       - CROSS_ORIGIN=http://localhost:80
     restart: unless-stopped
-    command: ["/usr/local/bin/wait-for-db.sh", "db:3306", "--", "java", "-jar", "*.jar"]
+    command:
+      [
+        "/usr/local/bin/wait-for-db.sh",
+        "db:3306",
+        "--",
+        "java",
+        "-jar",
+        "*.jar",
+      ]
     networks:
       - tresor_app
     volumes:
