@@ -17,4 +17,7 @@ public class LoginUser {
     
     @NotEmpty(message = "Password should not be empty")
     private String password;
+
+    @NotEmpty(message = "MFA token should not be empty")
+    private String mfaToken;
 }
