@@ -24,7 +24,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
     private PasswordResetTokenRepository tokenRepository;
     private EmailService emailService;
-    
+
     @Autowired
     private UserService userService;
 
@@ -47,14 +47,15 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         tokenRepository.save(passwordResetToken);
 
         String resetLink = "http://localhost:3000/reset-password?token=" + token;
-
+        System.out.println("RESET LINK: " + resetLink);
         emailService.sendPasswordResetEmail(user.getEmail(), user.getFirstName(), resetLink);
+
     }
 
     @Override
     public void resetPassword(String token, String password) {
         PasswordResetToken resetToken = tokenRepository.findByToken(token)
-            .orElseThrow(() -> new RuntimeException("Invalid token"));
+                .orElseThrow(() -> new RuntimeException("Invalid token"));
 
         if (resetToken.getExpiresAt().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Token expired");
@@ -64,9 +65,8 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         PasswordValidationService.ValidationResult result = passwordValidationService.validatePassword(password);
         if (!result.valid()) {
             throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                String.join("; ", result.errors())
-            );
+                    HttpStatus.BAD_REQUEST,
+                    String.join("; ", result.errors()));
         }
 
         User user = resetToken.getUser();
