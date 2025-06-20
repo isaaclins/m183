@@ -21,7 +21,7 @@ public class EmailServiceImpl implements EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             
-            helper.setFrom("contact@stephanhagmann.ch");
+            helper.setFrom("contact@isaaclins.ch");
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(body, true); // true indicates HTML content
@@ -167,7 +167,7 @@ public class EmailServiceImpl implements EmailService {
                     
                     <div class="footer">
                         <p>This email was sent from an automated system. Please do not reply to this email.</p>
-                        <p>&copy; 2025 Stephan Inc. All rights reserved.</p>
+                        <p>&copy; 2025 Isaac Lins Inc. All rights reserved.</p>
                     </div>
                 </div>
             </body>
