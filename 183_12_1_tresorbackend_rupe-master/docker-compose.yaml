@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   db:
@@ -11,9 +11,30 @@ services:
       - "3306:3306"
     volumes:
       - mariadb_data:/var/lib/mysql
+      - ./src/main/resources/tresordb.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
     networks:
       - tresor_app
+
+  frontend:
+    image: node:latest
+    container_name: frontend-container
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../183_12_2_tresorfrontend_rupe-master:/app
+    working_dir: /app
+    command: sh -c "npm install && npm start"
+    environment:
+      - REACT_APP_API_PROTOCOL=http
+      - REACT_APP_API_HOST=localhost
+      - REACT_APP_API_PORT=8080
+      - REACT_APP_API_PATH=/api
+      - REACT_APP_HCAPTCHA_SITE_KEY=839ca122-b29a-43ea-b8a4-cade62d04cdc
+    networks:
+      - tresor_app
+    depends_on:
+      - app
 
   app:
     build:
@@ -26,11 +47,19 @@ services:
       - "8080:8080"
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mariadb://db:3306/tresordb
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=1234
-      - CROSS_ORIGIN=http://localhost:80
+      - SPRING_DATASOURCE_USERNAME=tresoruser
+      - SPRING_DATASOURCE_PASSWORD=tresorpass
+      - CROSS_ORIGIN=http://localhost:3000
     restart: unless-stopped
-    command: ["/usr/local/bin/wait-for-db.sh", "db:3306", "--", "java", "-jar", "*.jar"]
+    command:
+      [
+        "/usr/local/bin/wait-for-db.sh",
+        "db:3306",
+        "--",
+        "java",
+        "-jar",
+        "*.jar",
+      ]
     networks:
       - tresor_app
     volumes:

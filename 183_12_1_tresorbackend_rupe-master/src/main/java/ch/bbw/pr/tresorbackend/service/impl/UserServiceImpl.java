@@ -8,15 +8,9 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
-import java.security.SecureRandom;
-import java.util.Base64;
-import java.util.ArrayList;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * UserServiceImpl
- * 
  * @author Peter Rutschmann
  */
 @Service
@@ -27,11 +21,6 @@ public class UserServiceImpl implements UserService {
 
    @Override
    public User createUser(User user) {
-      // Generate a salt for the new user
-      SecureRandom random = new SecureRandom();
-      byte[] saltBytes = new byte[16]; // 16 bytes = 128 bits, a common salt length
-      random.nextBytes(saltBytes);
-      user.setSalt(Base64.getEncoder().encodeToString(saltBytes));
       return userRepository.save(user);
    }
 
@@ -43,7 +32,8 @@ public class UserServiceImpl implements UserService {
 
    @Override
    public User findByEmail(String email) {
-      return userRepository.findFirstByEmail(email);
+      Optional<User> optionalUser = userRepository.findByEmail(email);
+      return optionalUser.get();
    }
 
    @Override
@@ -62,28 +52,14 @@ public class UserServiceImpl implements UserService {
    }
 
    @Override
-   public void deleteUser(Long userId) {
-      userRepository.deleteById(userId);
+   public User updatePassword(Long userId, String newPassword) {
+      User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+      user.setPassword(newPassword);
+      return userRepository.save(user);
    }
 
    @Override
-   public List<String> validatePassword(String password) {
-      List<String> errors = new ArrayList<>();
-      if (password == null || password.length() < 8) {
-         errors.add("Password must be at least 8 characters long.");
-      }
-      if (!Pattern.compile("[A-Z]").matcher(password).find()) {
-         errors.add("Password must contain at least one uppercase letter.");
-      }
-      if (!Pattern.compile("[a-z]").matcher(password).find()) {
-         errors.add("Password must contain at least one lowercase letter.");
-      }
-      if (!Pattern.compile("[0-9]").matcher(password).find()) {
-         errors.add("Password must contain at least one digit.");
-      }
-      if (!Pattern.compile("[^a-zA-Z0-9]").matcher(password).find()) {
-         errors.add("Password must contain at least one special character.");
-      }
-      return errors;
+   public void deleteUser(Long userId) {
+      userRepository.deleteById(userId);
    }
 }

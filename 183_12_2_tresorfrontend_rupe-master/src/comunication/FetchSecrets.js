@@ -4,25 +4,25 @@
  */
 
 //Post secret to server
-export const postSecret = async (secretPayload) => {
+export const postSecret = async (newSecret) => {
     const protocol = process.env.REACT_APP_API_PROTOCOL; // "http"
     const host = process.env.REACT_APP_API_HOST; // "localhost"
     const port = process.env.REACT_APP_API_PORT; // "8080"
     const path = process.env.REACT_APP_API_PATH; // "/api"
     const portPart = port ? `:${port}` : ''; // port is optional
     const API_URL = `${protocol}://${host}${portPart}${path}`;
-    console.log("Payload in postSecret:", secretPayload)
 
     try {
         const response = await fetch(`${API_URL}/secrets`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
             },
             body: JSON.stringify({
-                email: secretPayload.email,
-                encryptPassword: secretPayload.encryptPassword,
-                content: secretPayload.content
+                email: newSecret.email,
+                encryptPassword: localStorage.getItem('password'),
+                content: newSecret
             })
         });
 
@@ -32,7 +32,6 @@ export const postSecret = async (secretPayload) => {
         }
 
         const data = await response.json();
-        console.log('Secret successfully posted:', data);
         return data;
     } catch (error) {
         console.error('Error posting secret:', error.message);
@@ -51,25 +50,24 @@ export const getSecretsforUser = async (loginValues) => {
     
     console.log("Attempting to fetch secrets with credentials:", {
         email: loginValues.email,
-        // Not showing password for security
     });
     
     try {
         // Use the same encryption password that was used when creating secrets
         const requestBody = {
             email: loginValues.email,
-            encryptPassword: loginValues.password // Use login password for consistency
+            encryptPassword: loginValues.password
         };
         
-        console.log("Sending request body for getSecrets:", {
+        console.log("Sending request body:", {
             email: requestBody.email,
-            // Not showing password for security
         });
         
         const response = await fetch(`${API_URL}/secrets/byemail`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
             },
             body: JSON.stringify(requestBody)
         });

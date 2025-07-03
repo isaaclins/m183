@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
 
 /**
  * SecretController
- * 
  * @author Peter Rutschmann
  */
 @RestController
@@ -57,20 +56,14 @@ public class SecretController {
       System.out.println("SecretController.createSecret, input validation passed");
 
       User user = userService.findByEmail(newSecret.getEmail());
-      if (user == null || user.getSalt() == null) {
-         // Handle case where user or salt is not found (should not happen for new users)
-         System.out.println("SecretController.createSecret, user or salt not found for email: " + newSecret.getEmail());
-         JsonObject obj = new JsonObject();
-         obj.addProperty("message", "User or salt not found, cannot create secret.");
-         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new Gson().toJson(obj));
-      }
 
-      // transfer secret and encrypt content
+      //transfer secret and encrypt content
       Secret secret = new Secret(
             null,
             user.getId(),
-            new EncryptUtil(newSecret.getEncryptPassword(), user.getSalt()).encrypt(newSecret.getContent().toString()));
-      // save secret in db
+            new EncryptUtil(newSecret.getEncryptPassword()).encrypt(newSecret.getContent().toString())
+      );
+      //save secret in db
       secretService.createSecret(secret);
       System.out.println("SecretController.createSecret, secret saved in db");
       JsonObject obj = new JsonObject();
@@ -91,21 +84,10 @@ public class SecretController {
          System.out.println("SecretController.getSecretsByUserId secret isEmpty");
          return ResponseEntity.notFound().build();
       }
-      // Decrypt content
-      for (Secret secret : secrets) {
+      //Decrypt content
+      for(Secret secret: secrets) {
          try {
-            // Need to get the user associated with these secrets to get their salt
-            // Assuming credentials.getUserId() gives the correct user id for ALL these
-            // secrets.
-            User secretOwner = userService.getUserById(credentials.getUserId());
-            if (secretOwner == null || secretOwner.getSalt() == null) {
-               System.out.println("SecretController.getSecretsByUserId, owner or salt not found for user ID: "
-                     + credentials.getUserId());
-               secret.setContent("Error: Owner or salt not found for decryption.");
-               continue;
-            }
-            secret.setContent(new EncryptUtil(credentials.getEncryptPassword(), secretOwner.getSalt())
-                  .decrypt(secret.getContent()));
+            secret.setContent(new EncryptUtil(credentials.getEncryptPassword()).decrypt(secret.getContent()));
          } catch (EncryptionOperationNotPossibleException e) {
             System.out.println("SecretController.getSecretsByUserId " + e + " " + secret);
             secret.setContent("not encryptable. Wrong password?");
@@ -124,23 +106,16 @@ public class SecretController {
       System.out.println("SecretController.getSecretsByEmail " + credentials);
 
       User user = userService.findByEmail(credentials.getEmail());
-      if (user == null || user.getSalt() == null) {
-         System.out.println(
-               "SecretController.getSecretsByEmail, user or salt not found for email: " + credentials.getEmail());
-         return ResponseEntity.notFound().build();
-      }
 
       List<Secret> secrets = secretService.getSecretsByUserId(user.getId());
       if (secrets.isEmpty()) {
          System.out.println("SecretController.getSecretsByEmail secret isEmpty");
          return ResponseEntity.notFound().build();
       }
-      // Decrypt content
-      for (Secret secret : secrets) {
+      //Decrypt content
+      for(Secret secret: secrets) {
          try {
-            // User's salt is already available from the 'user' object fetched above
-            secret.setContent(
-                  new EncryptUtil(credentials.getEncryptPassword(), user.getSalt()).decrypt(secret.getContent()));
+            secret.setContent(new EncryptUtil(credentials.getEncryptPassword()).decrypt(secret.getContent()));
          } catch (EncryptionOperationNotPossibleException e) {
             System.out.println("SecretController.getSecretsByEmail " + e + " " + secret);
             secret.setContent("not encryptable. Wrong password?");
@@ -168,7 +143,7 @@ public class SecretController {
          @PathVariable("id") Long secretId,
          @Valid @RequestBody NewSecret newSecret,
          BindingResult bindingResult) {
-      // input validation
+      //input validation
       if (bindingResult.hasErrors()) {
          List<String> errors = bindingResult.getFieldErrors().stream()
                .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
@@ -185,9 +160,9 @@ public class SecretController {
          return ResponseEntity.badRequest().body(json);
       }
 
-      // get Secret with id
+      //get Secret with id
       Secret dbSecrete = secretService.getSecretById(secretId);
-      if (dbSecrete == null) {
+      if(dbSecrete == null){
          System.out.println("SecretController.updateSecret, secret not found in db");
          JsonObject obj = new JsonObject();
          obj.addProperty("answer", "Secret not found in db");
@@ -196,15 +171,9 @@ public class SecretController {
          return ResponseEntity.badRequest().body(json);
       }
       User user = userService.findByEmail(newSecret.getEmail());
-      if (user == null || user.getSalt() == null) {
-         System.out.println("SecretController.updateSecret, user or salt not found for email: " + newSecret.getEmail());
-         JsonObject obj = new JsonObject();
-         obj.addProperty("message", "User or salt not found, cannot update secret.");
-         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new Gson().toJson(obj));
-      }
 
-      // check if Secret in db has not same userid
-      if (dbSecrete.getUserId() != user.getId()) {
+      //check if Secret in db has not same userid
+      if(dbSecrete.getUserId() != user.getId()){
          System.out.println("SecretController.updateSecret, not same user id");
          JsonObject obj = new JsonObject();
          obj.addProperty("answer", "Secret has not same user id");
@@ -212,10 +181,9 @@ public class SecretController {
          System.out.println("SecretController.updateSecret failed:" + json);
          return ResponseEntity.badRequest().body(json);
       }
-      // check if Secret can be decrypted with password
+      //check if Secret can be decrypted with password
       try {
-         // Use user's salt for decryption check
-         new EncryptUtil(newSecret.getEncryptPassword(), user.getSalt()).decrypt(dbSecrete.getContent());
+         new EncryptUtil(newSecret.getEncryptPassword()).decrypt(dbSecrete.getContent());
       } catch (EncryptionOperationNotPossibleException e) {
          System.out.println("SecretController.updateSecret, invalid password");
          JsonObject obj = new JsonObject();
@@ -224,14 +192,14 @@ public class SecretController {
          System.out.println("SecretController.updateSecret failed:" + json);
          return ResponseEntity.badRequest().body(json);
       }
-      // modify Secret in db.
+      //modify Secret in db.
       Secret secret = new Secret(
             secretId,
             user.getId(),
-            // Use user's salt for encryption
-            new EncryptUtil(newSecret.getEncryptPassword(), user.getSalt()).encrypt(newSecret.getContent().toString()));
+            new EncryptUtil(newSecret.getEncryptPassword()).encrypt(newSecret.getContent().toString())
+      );
       Secret updatedSecret = secretService.updateSecret(secret);
-      // save secret in db
+      //save secret in db
       secretService.createSecret(secret);
       System.out.println("SecretController.updateSecret, secret updated in db");
       JsonObject obj = new JsonObject();
@@ -245,8 +213,7 @@ public class SecretController {
    @CrossOrigin(origins = "${CROSS_ORIGIN}")
    @DeleteMapping("{id}")
    public ResponseEntity<String> deleteSecret(@PathVariable("id") Long secretId) {
-      // todo: Some kind of brute force delete, perhaps test first userid and
-      // encryptpassword
+      //todo: Some kind of brute force delete, perhaps test first userid and encryptpassword
       secretService.deleteSecret(secretId);
       System.out.println("SecretController.deleteSecret succesfully: " + secretId);
       return new ResponseEntity<>("Secret successfully deleted!", HttpStatus.OK);

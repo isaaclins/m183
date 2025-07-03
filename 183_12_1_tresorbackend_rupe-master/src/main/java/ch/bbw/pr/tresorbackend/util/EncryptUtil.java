@@ -1,37 +1,31 @@
 package ch.bbw.pr.tresorbackend.util;
 
 import javax.crypto.Cipher;
-import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
-import java.security.spec.KeySpec;
 import java.util.Base64;
+
 
 /**
  * EncryptUtil
  * Used to encrypt content.
- * 
  * @author Peter Rutschmann
  */
 public class EncryptUtil {
    private final SecretKeySpec secretKeySpec;
    private static final String ALGORITHM = "AES/CBC/PKCS5Padding";
    private static final int IV_LENGTH = 16;
-   private static final int ITERATION_COUNT = 65536;
-   private static final int KEY_LENGTH = 256;
 
-   public EncryptUtil(String secretPassword, String saltString) {
+   public EncryptUtil(String secretKey) {
       try {
-         byte[] salt = Base64.getDecoder().decode(saltString);
-         SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-         KeySpec spec = new PBEKeySpec(secretPassword.toCharArray(), salt, ITERATION_COUNT, KEY_LENGTH);
-         SecretKeySpec generatedSecretKey = new SecretKeySpec(factory.generateSecret(spec).getEncoded(), "AES");
-         this.secretKeySpec = generatedSecretKey;
+         MessageDigest sha = MessageDigest.getInstance("SHA-256");
+         byte[] key = sha.digest(secretKey.getBytes(StandardCharsets.UTF_8));
+         this.secretKeySpec = new SecretKeySpec(key, 0, 16, "AES");
       } catch (Exception e) {
-         throw new RuntimeException("Error initializing secret key with PBKDF2", e);
+         throw new RuntimeException("Error initializing secret key", e);
       }
    }
 
@@ -39,13 +33,11 @@ public class EncryptUtil {
       try {
          Cipher cipher = Cipher.getInstance(ALGORITHM);
          byte[] iv = new byte[IV_LENGTH];
-         new SecureRandom().nextBytes(iv); // generate random IV
+         new SecureRandom().nextBytes(iv);
          IvParameterSpec ivSpec = new IvParameterSpec(iv);
 
          cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec, ivSpec);
          byte[] encrypted = cipher.doFinal(data.getBytes(StandardCharsets.UTF_8));
-
-         // IV + encrypted data -> Base64
          byte[] encryptedWithIv = new byte[IV_LENGTH + encrypted.length];
          System.arraycopy(iv, 0, encryptedWithIv, 0, IV_LENGTH);
          System.arraycopy(encrypted, 0, encryptedWithIv, IV_LENGTH, encrypted.length);

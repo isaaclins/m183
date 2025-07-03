@@ -8,7 +8,6 @@ import lombok.Setter;
 
 /**
  * User
- * 
  * @author Peter Rutschmann
  */
 @Getter
@@ -22,10 +21,10 @@ public class User {
    @GeneratedValue(strategy = GenerationType.IDENTITY)
    private Long id;
 
-   @Column(nullable = false, name = "first_name")
+   @Column(nullable = false, name="first_name")
    private String firstName;
 
-   @Column(nullable = false, name = "last_name")
+   @Column(nullable = false, name="last_name")
    private String lastName;
 
    @Column(nullable = false, unique = true)
@@ -34,6 +33,14 @@ public class User {
    @Column(nullable = false)
    private String password;
 
-   @Column(nullable = true) // Initially nullable for existing users, will be set for new users
-   private String salt;
+   @Column(nullable = true)
+   private String mfaSecret = "";
+
+   @Enumerated(EnumType.STRING)
+   @Column(nullable = false)
+   private Role role;
+
+   public enum Role {
+      ADMIN, USER
+   }
 }

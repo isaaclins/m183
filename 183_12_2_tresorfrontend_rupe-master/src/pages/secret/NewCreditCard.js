@@ -24,11 +24,16 @@ function NewCreditCard({loginValues}) {
         e.preventDefault();
         setErrorMessage('');
         try {
-            await postSecret({
-                email: loginValues.email,
+            const newSecret = {
                 content: creditCardValues,
-                encryptPassword: loginValues.password
-            });
+                kind: 'creditcard',
+                kindid: 2,
+                title: creditCardValues.cardtype || 'Credit Card', // Using card type as title or default
+                email: loginValues.email,
+                encryptPassword: loginValues.encryptPassword
+            };
+            
+            await postSecret(newSecret);
             setCreditCardValues(initialState);
             navigate('/secret/secrets');
         } catch (error) {

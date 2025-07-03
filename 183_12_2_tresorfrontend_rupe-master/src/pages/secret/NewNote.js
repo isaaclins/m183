@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {postSecret} from "../../comunication/FetchSecrets";
-
 /**
  * NewNote
  * @author Peter Rutschmann
@@ -15,18 +14,22 @@ function NewNote({loginValues}) {
     };
     const [noteValues, setNoteValues] = useState(initialState);
     const [errorMessage, setErrorMessage] = useState('');
-
     const navigate = useNavigate();
-
+    
     const handleSubmit = async (e) => {
         e.preventDefault();
         setErrorMessage('');
         try {
-            await postSecret({
-                email: loginValues.email,
+            const newSecret = {
                 content: noteValues,
-                encryptPassword: loginValues.password
-            });
+                kind: 'note',
+                kindid: 3,
+                title: noteValues.title || 'Note', // Using the title field or a default
+                email: loginValues.email,
+                encryptPassword: loginValues.encryptPassword
+            };
+            
+            await postSecret(newSecret);
             setNoteValues(initialState);
             navigate('/secret/secrets');
         } catch (error) {
@@ -34,7 +37,7 @@ function NewNote({loginValues}) {
             setErrorMessage(error.message);
         }
     };
-
+    
     return (
         <div>
             <h2>Add new note secret</h2>
@@ -78,5 +81,4 @@ function NewNote({loginValues}) {
         </div>
     );
 }
-
 export default NewNote;

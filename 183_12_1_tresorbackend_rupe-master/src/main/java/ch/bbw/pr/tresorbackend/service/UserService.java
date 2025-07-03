@@ -5,7 +5,6 @@ import java.util.List;
 
 /**
  * UserService
- * 
  * @author Peter Rutschmann
  */
 public interface UserService {
@@ -19,7 +18,7 @@ public interface UserService {
 
    User updateUser(User user);
 
-   void deleteUser(Long userId);
+   User updatePassword(Long userId, String newPassword);
 
-   List<String> validatePassword(String password);
+   void deleteUser(Long userId);
 }
