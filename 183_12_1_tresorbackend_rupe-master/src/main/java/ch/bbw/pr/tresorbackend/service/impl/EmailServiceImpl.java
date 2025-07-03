@@ -21,7 +21,7 @@ public class EmailServiceImpl implements EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             
-            helper.setFrom("contact@isaaclins.ch");
+            helper.setFrom("isaac.lins07@gmail.com");
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(body, true); // true indicates HTML content
