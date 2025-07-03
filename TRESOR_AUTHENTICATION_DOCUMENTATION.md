@@ -1,5 +1,317 @@
 # Tresor-Anwendung: Authentifizierung und Autorisierung - Technische Dokumentation
 
+## Beantworte die Fragen mit Mermaid Flow Diagrammen
+
+### 1. Login mit Email und Passwort - Flow
+
+```mermaid
+flowchart TD
+    A["🔐 Frontend: User Login Form<br/>Email + Password + MFA Token"] --> B["📤 POST /api/users/login<br/>JSON: {email, password, mfaToken}"]
+    B --> C["🔍 Backend: UserController.doLoginUser()"]
+    C --> D["📋 Input Validation<br/>BindingResult.hasErrors()"]
+    D --> E{❓ Valid Input?}
+    E -->|No| F["❌ Return 400 Bad Request<br/>Validation Errors"]
+    E -->|Yes| G["🔍 Find User by Email<br/>userService.findByEmail()"]
+    G --> H{❓ User exists?}
+    H -->|No| I["❌ Return 401 Unauthorized<br/>User not found"]
+    H -->|Yes| J["🔐 Verify Password<br/>passwordService.verifyPassword()<br/>BCrypt + Pepper"]
+    J --> K{❓ Password valid?}
+    K -->|No| L["❌ Return 401 Unauthorized<br/>Invalid password"]
+    K -->|Yes| M{❓ MFA enabled?}
+    M -->|No| N["🎫 Generate JWT Token<br/>jwtUtil.generateToken()"]
+    M -->|Yes| O["🔢 Verify TOTP Token<br/>TOTPSecretGenerator.verifyToken()"]
+    O --> P{❓ MFA valid?}
+    P -->|No| Q["❌ Return 401 Unauthorized<br/>Invalid MFA token"]
+    P -->|Yes| N
+    N --> R["✅ Return Success Response<br/>{token, userId, firstName, lastName, email}"]
+    R --> S["💾 Frontend: Store in localStorage<br/>token, userId, userEmail, isLoggedIn"]
+    S --> T["🏠 Navigate to Dashboard"]
+
+    F --> U["🖥️ Display Error Message"]
+    I --> U
+    L --> U
+    Q --> U
+```
+
+### 2. User Secrets auflisten - Flow
+
+```mermaid
+flowchart TD
+    A["🔐 Frontend: Secrets Page Load<br/>User navigates to /secrets"] --> B["✅ Check Login Status<br/>localStorage.getItem('isLoggedIn')"]
+    B --> C{❓ User logged in?}
+    C -->|No| D["❌ Display Login Error<br/>'No valid email, please login first'"]
+    C -->|Yes| E["📤 POST /api/secrets/byemail<br/>Body: {email, encryptPassword}<br/>Header: Authorization: Bearer token"]
+    E --> F["🔍 Backend: SecretController.getSecretsByEmail()"]
+    F --> G["🔑 JWT Auth Filter<br/>JwtAuthFilterImpl.doFilterInternal()"]
+    G --> H["🎫 Validate JWT Token<br/>jwtUtil.validateToken()"]
+    H --> I{❓ JWT valid?}
+    I -->|No| J["❌ Return 401 Unauthorized<br/>Invalid token"]
+    I -->|Yes| K["🔍 Find User by Email<br/>userService.findByEmail()"]
+    K --> L["📋 Get User Secrets<br/>secretService.getSecretsByUserId()"]
+    L --> M{❓ Secrets found?}
+    M -->|No| N["❌ Return 404 Not Found<br/>No secrets"]
+    M -->|Yes| O["🔄 Loop through Secrets<br/>For each secret in list"]
+    O --> P["🔓 Decrypt Secret Content<br/>EncryptUtil.decrypt(userPassword)"]
+    P --> Q{❓ Decryption successful?}
+    Q -->|No| R["⚠️ Set content to<br/>'not encryptable. Wrong password?'"]
+    Q -->|Yes| S["✅ Keep decrypted content"]
+    R --> T{❓ More secrets?}
+    S --> T
+    T -->|Yes| O
+    T -->|No| U["📤 Return Decrypted Secrets List<br/>List&lt;Secret&gt; with plaintext content"]
+    U --> V["🖥️ Frontend: Display Secrets<br/>Render secrets in UI"]
+
+    J --> W["🖥️ Display Auth Error"]
+    N --> X["🖥️ Display 'No secrets found'"]
+```
+
+### 3. Web Security Configuration - Flow
+
+```mermaid
+flowchart TD
+    A["🌐 HTTP Request arrives"] --> B["🔐 Security Filter Chain<br/>SecurityConfig.filterChain()"]
+    B --> C["🔍 Check Request Path<br/>request.getRequestURI()"]
+    C --> D{❓ Public endpoint?}
+    D -->|Yes| E["✅ Permit All<br/>/api/users/login<br/>/api/users/register<br/>/oauth2/**<br/>/api/users/request-password-reset<br/>/api/users/reset-password"]
+    D -->|No| F["🔑 JWT Auth Filter<br/>JwtAuthFilterImpl.doFilterInternal()"]
+    F --> G["🔍 Check Authorization Header<br/>Authorization: Bearer token"]
+    G --> H{❓ Bearer token present?}
+    H -->|No| I["❌ Return 401 Unauthorized<br/>No token provided"]
+    H -->|Yes| J["🎫 Extract JWT Token<br/>authHeader.substring(7)"]
+    J --> K["🔐 Validate JWT<br/>jwtUtil.validateToken()"]
+    K --> L{❓ JWT valid?}
+    L -->|No| M["❌ Return 401 Unauthorized<br/>Invalid token"]
+    L -->|Yes| N["👤 Extract User Email<br/>jwtUtil.extractSubject()"]
+    N --> O["🔍 Load User Details<br/>userDetailsService.loadUserByUsername()"]
+    O --> P["🏷️ Extract Role from JWT<br/>jwtUtil.extractRole()"]
+    P --> Q["🔐 Create Authentication<br/>UsernamePasswordAuthenticationToken"]
+    Q --> R["📋 Set Authentication in Context<br/>SecurityContextHolder.setAuthentication()"]
+    R --> S["🔍 Check Endpoint Authorization<br/>Based on role and path"]
+    S --> T{❓ Role authorized?}
+    T -->|No| U["❌ Return 403 Forbidden<br/>Insufficient permissions"]
+    T -->|Yes| V["✅ Continue to Controller<br/>Process request"]
+
+    E --> W["🔄 Process Request<br/>No authentication required"]
+    V --> W
+```
+
+### 4. JWT Token-Erstellung und Authentifizierung - Flow
+
+```mermaid
+flowchart TD
+    subgraph "🎫 JWT Token Generation"
+        A["✅ User Successfully Authenticated<br/>Login or OAuth2 success"] --> B["🔧 JwtUtil.generateToken()<br/>Parameters: email, role"]
+        B --> C["⏰ Get Current Timestamp<br/>Date now = new Date()"]
+        C --> D["⏳ Calculate Expiry<br/>now + 24 hours (86400000ms)"]
+        D --> E["🏗️ Create JWT Builder<br/>Jwts.builder()"]
+        E --> F["📧 Set Subject<br/>.subject(userEmail)"]
+        F --> G["🏷️ Set Role Claim<br/>.claim('role', userRole)"]
+        G --> H["⏰ Set Issued At<br/>.issuedAt(now)"]
+        H --> I["⏳ Set Expiration<br/>.expiration(expiryDate)"]
+        I --> J["🔐 Sign with Secret Key<br/>.signWith(HMAC_SHA256_key)"]
+        J --> K["📦 Compact to String<br/>.compact()"]
+        K --> L["🎫 Return JWT Token<br/>eyJhbGciOiJIUzI1NiJ9..."]
+    end
+
+    subgraph "🔐 JWT Token Validation"
+        M["🌐 Request with Authorization Header<br/>Authorization: Bearer token"] --> N["🔍 Extract Bearer Token<br/>authHeader.substring(7)"]
+        N --> O["🔧 JwtUtil.validateToken()<br/>Parse JWT with secret key"]
+        O --> P["🔐 Verify Signature<br/>HMAC SHA256 verification"]
+        P --> Q{❓ Signature valid?}
+        Q -->|No| R["❌ Throw JwtException<br/>Invalid signature"]
+        Q -->|Yes| S["⏳ Check Expiration<br/>Claims.getExpiration()"]
+        S --> T{❓ Token expired?}
+        T -->|Yes| U["❌ Throw ExpiredJwtException<br/>Token expired"]
+        T -->|No| V["📋 Extract Claims<br/>Subject, Role, IssuedAt"]
+        V --> W["📧 Extract Subject (Email)<br/>claims.getSubject()"]
+        W --> X["🏷️ Extract Role<br/>claims.get('role')"]
+        X --> Y["🔐 Create Authentication<br/>UsernamePasswordAuthenticationToken"]
+        Y --> Z["📋 Set Security Context<br/>SecurityContextHolder.setAuthentication()"]
+    end
+
+    L --> M
+    R --> AA["🚫 Authentication Failed"]
+    U --> AA
+    Z --> BB["✅ Authentication Successful<br/>Continue to controller"]
+```
+
+### 5. 2FA (Two-Factor Authentication) - Flow
+
+```mermaid
+flowchart TD
+    subgraph "🔐 2FA Setup during Registration"
+        A["📝 User Registration<br/>POST /api/users"] --> B["🔐 Generate TOTP Secret<br/>TOTPSecretGenerator.generateSecret()"]
+        B --> C["🎲 Create 160-bit Random Secret<br/>SecureRandom + Base32 encoding"]
+        C --> D["💾 Store Secret in Database<br/>user.mfaSecret = secret"]
+        D --> E["📱 Generate TOTP URI<br/>otpauth://totp/TresorApp:email?secret=XXX&issuer=TresorApp"]
+        E --> F["📤 Return URI to Frontend<br/>Response includes totpUri"]
+        F --> G["📱 Frontend: Generate QR Code<br/>QRCodeCanvas component"]
+        G --> H["👤 User: Scan QR Code<br/>Google Authenticator / Authy"]
+        H --> I["📱 Authenticator App: Store Secret<br/>Generates 6-digit codes every 30s"]
+    end
+
+    subgraph "🔒 2FA Verification during Login"
+        J["🔐 User Login Request<br/>Email + Password + MFA Token"] --> K["✅ Verify Email & Password<br/>Standard authentication"]
+        K --> L{❓ User has MFA secret?}
+        L -->|No| M["✅ Login Successful<br/>No 2FA required"]
+        L -->|Yes| N["🔢 Check MFA Token<br/>TOTPSecretGenerator.verifyToken()"]
+        N --> O["🔧 GoogleAuthenticator.authorize()<br/>Validate 6-digit code"]
+        O --> P["⏰ Calculate Time Window<br/>Current 30s + Previous 30s + Next 30s"]
+        P --> Q["🔢 Generate Expected Codes<br/>For each time window"]
+        Q --> R{❓ User code matches?}
+        R -->|No| S["❌ Return 401 Unauthorized<br/>'Invalid MFA token'"]
+        R -->|Yes| T["✅ 2FA Verified<br/>Continue login process"]
+        T --> U["🎫 Generate JWT Token<br/>jwtUtil.generateToken()"]
+        U --> V["✅ Login Successful<br/>Return user data + token"]
+    end
+
+    subgraph "🔢 TOTP Algorithm"
+        W["🔐 Shared Secret (160-bit)"] --> X["⏰ Current Unix Timestamp"]
+        X --> Y["➗ Divide by 30 seconds<br/>Time Counter T"]
+        Y --> Z["🔐 HMAC-SHA1(Secret, T)<br/>Generate 20-byte hash"]
+        Z --> AA["✂️ Dynamic Truncation<br/>Extract 31-bit value"]
+        AA --> BB["🔢 Modulo 1,000,000<br/>6-digit TOTP code"]
+        BB --> CC["⏰ Valid for 30 seconds<br/>Same code on app & server"]
+    end
+
+    I --> J
+    V --> DD["🏠 Navigate to Dashboard"]
+    S --> EE["🖥️ Display MFA Error"]
+```
+
+### 6. OAuth2 (Google Login) - Flow
+
+```mermaid
+flowchart TD
+    subgraph "🌐 OAuth2 Google Login Flow"
+        A["🔘 User clicks 'Sign in with Google'<br/>Frontend button"] --> B["🔀 Redirect to OAuth2 Endpoint<br/>window.location.href = '/oauth2/authorization/google'"]
+        B --> C["🔀 Spring Security Redirect<br/>Redirect to Google OAuth2 server"]
+        C --> D["🔐 Google Authentication<br/>User enters Google credentials"]
+        D --> E["✅ Google Returns Auth Code<br/>Authorization code in callback"]
+        E --> F["🎫 Exchange Code for Token<br/>Spring Security exchanges code"]
+        F --> G["🔧 CustomOAuth2UserService<br/>loadUser() method called"]
+        G --> H["📡 Fetch User Info from Google<br/>Google API call with access token"]
+        H --> I["📋 Extract User Data<br/>email, name, googleId"]
+        I --> J{❓ User exists in database?}
+        J -->|No| K["👤 Create New User<br/>User newUser = new User()"]
+        J -->|Yes| L["👤 Load Existing User<br/>userRepository.findByEmail()"]
+        K --> M["💾 Save User to Database<br/>userRepository.save(newUser)"]
+        L --> N["🎯 CustomOAuth2SuccessHandler<br/>onAuthenticationSuccess()"]
+        M --> N
+        N --> O["🎫 Generate JWT Token<br/>jwtUtil.generateToken(email, role)"]
+        O --> P["🔗 Build Redirect URL<br/>http://localhost:3000/oauth2/redirect"]
+        P --> Q["📤 Add Query Parameters<br/>?token=XXX&email=XXX&userId=XXX"]
+        Q --> R["🔀 Redirect to Frontend<br/>response.sendRedirect()"]
+        R --> S["🖥️ Frontend: OAuth2RedirectHandler<br/>Extract params from URL"]
+        S --> T["💾 Store Token & User Data<br/>localStorage.setItem()"]
+        T --> U["🏠 Navigate to Dashboard<br/>navigate('/')"]
+    end
+
+    subgraph "👤 User Creation Process"
+        V["📧 Extract from Google<br/>email, name, sub (googleId)"] --> W["👤 Create User Object<br/>new User()"]
+        W --> X["📧 Set Email<br/>user.setEmail(email)"]
+        X --> Y["👤 Set Names<br/>user.setFirstName(name)"]
+        Y --> Z["🏷️ Set Role<br/>user.setRole(USER)"]
+        Z --> AA["🔐 Generate Empty Password<br/>Placeholder for OAuth users"]
+        AA --> BB["💾 Save to Database<br/>userRepository.save(user)"]
+    end
+
+    subgraph "🔐 Security Integration"
+        CC["🔑 JWT Token includes<br/>email, role, expiry"] --> DD["🔍 Same JWT validation<br/>as email/password login"]
+        DD --> EE["🔐 Same authorization rules<br/>Role-based access control"]
+        EE --> FF["📋 Same Security Context<br/>SecurityContextHolder"]
+    end
+
+    K --> V
+    O --> CC
+    U --> GG["✅ User Logged In<br/>Full access to application"]
+```
+
+### 7. Gesamte Security Architecture - Overview
+
+```mermaid
+flowchart TB
+    subgraph "🖥️ Frontend (React)"
+        A["🔐 Login Page<br/>Email/Password + MFA"]
+        B["📝 Registration Page<br/>hCaptcha + User Info"]
+        C["🗂️ Secrets Dashboard<br/>Encrypted secrets display"]
+        D["📱 MFA Setup Page<br/>QR Code for authenticator"]
+        E["🌐 OAuth2 Handler<br/>Google login processing"]
+    end
+
+    subgraph "🔐 Backend Security Layer"
+        F["🛡️ Security Filter Chain<br/>HTTP request filtering"]
+        G["🔑 JWT Auth Filter<br/>Token validation"]
+        H["🔐 Password Encryption<br/>BCrypt + Pepper"]
+        I["🔢 TOTP Generator<br/>2FA verification"]
+        J["🌐 OAuth2 Services<br/>Google integration"]
+        K["🤖 Captcha Service<br/>hCaptcha validation"]
+    end
+
+    subgraph "🎛️ Controllers & Services"
+        L["👤 User Controller<br/>Authentication endpoints"]
+        M["🗂️ Secret Controller<br/>Encrypted data access"]
+        N["📧 Email Service<br/>Password reset emails"]
+        O["🔐 Encryption Util<br/>AES secret encryption"]
+    end
+
+    subgraph "🌐 External Services"
+        P["🔍 Google OAuth2 API<br/>User authentication"]
+        Q["🤖 hCaptcha API<br/>Bot protection"]
+        R["📧 Email Service<br/>SMTP mail delivery"]
+    end
+
+    subgraph "💾 Database Layer"
+        S["👤 User Table<br/>BCrypt passwords + MFA secrets"]
+        T["🗂️ Secret Table<br/>AES encrypted content"]
+        U["🔑 Password Reset Table<br/>Temporary reset tokens"]
+    end
+
+    subgraph "🔒 Security Features"
+        V["🎫 JWT Tokens<br/>Stateless authentication"]
+        W["🔐 BCrypt + Pepper<br/>Password hashing"]
+        X["🔢 TOTP 2FA<br/>Time-based codes"]
+        Y["🔐 AES Encryption<br/>Secret content protection"]
+        Z["🛡️ Role-based Access<br/>USER/ADMIN permissions"]
+    end
+
+    A --> L
+    B --> L
+    C --> M
+    D --> L
+    E --> J
+
+    F --> G
+    G --> V
+    L --> H
+    L --> I
+    M --> O
+    J --> P
+    K --> Q
+    N --> R
+
+    L --> S
+    M --> T
+    L --> U
+
+    H --> W
+    I --> X
+    O --> Y
+    F --> Z
+
+    classDef frontend fill:#e1f5fe
+    classDef backend fill:#f3e5f5
+    classDef external fill:#e8f5e8
+    classDef database fill:#fff3e0
+    classDef security fill:#ffebee
+
+    class A,B,C,D,E frontend
+    class F,G,H,I,J,K,L,M,N,O backend
+    class P,Q,R external
+    class S,T,U database
+    class V,W,X,Y,Z security
+```
+
 ## Übersicht
 
 Diese Dokumentation zeigt die verschiedenen Authentifizierungs- und Autorisierungsmechanismen der Tresor-Anwendung und erklärt, wo im Code diese implementiert sind.
