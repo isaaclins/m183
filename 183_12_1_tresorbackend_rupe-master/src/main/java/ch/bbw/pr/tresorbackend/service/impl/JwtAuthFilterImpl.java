@@ -25,15 +25,28 @@ public class JwtAuthFilterImpl extends OncePerRequestFilter {
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService;
 
-    public JwtAuthFilterImpl(JwtUtil jwtUtil, @Qualifier("userDetailsServiceImpl") UserDetailsService userDetailsService) {
+    public JwtAuthFilterImpl(JwtUtil jwtUtil,
+            @Qualifier("userDetailsServiceImpl") UserDetailsService userDetailsService) {
         this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, 
-                                  FilterChain filterChain) throws ServletException, IOException {
-        
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
+
+        // Define public paths that should bypass the JWT check
+        String path = request.getRequestURI();
+        if (path.startsWith("/api/users/login") ||
+                path.startsWith("/api/users/register") ||
+                path.startsWith("/api/users/request-password-reset") ||
+                path.startsWith("/api/users/reset-password") ||
+                path.startsWith("/oauth2") ||
+                path.startsWith("/login/oauth2")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
         final String userEmail;
@@ -46,32 +59,31 @@ public class JwtAuthFilterImpl extends OncePerRequestFilter {
 
         // Extract JWT token (remove "Bearer " prefix)
         jwt = authHeader.substring(7);
-        
+
         try {
             // Extract username from JWT
             userEmail = jwtUtil.extractSubject(jwt);
 
             // If we have a username and no authentication is set yet
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                
+
                 // Load user details
                 UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
-                
+
                 // Validate token
                 if (jwtUtil.validateToken(jwt)) {
                     // Extract role from JWT
                     String role = jwtUtil.extractRole(jwt);
-                    
+
                     // Create authentication token with authorities
                     List<SimpleGrantedAuthority> authorities = List.of(
-                        new SimpleGrantedAuthority("ROLE_" + role)
-                    );
-                    
-                    UsernamePasswordAuthenticationToken authToken = 
-                        new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
-                    
+                            new SimpleGrantedAuthority("ROLE_" + role));
+
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails,
+                            null, authorities);
+
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    
+
                     // Set authentication in security context
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }

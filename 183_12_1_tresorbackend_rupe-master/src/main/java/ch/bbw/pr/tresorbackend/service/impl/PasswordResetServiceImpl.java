@@ -45,9 +45,12 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         passwordResetToken.setExpiresAt(expiresAt);
 
         tokenRepository.save(passwordResetToken);
-
+        System.out.println("================================================");
+        System.out.println("TOKEN: " + token);
         String resetLink = "http://localhost:3000/reset-password?token=" + token;
         System.out.println("RESET LINK: " + resetLink);
+        System.out.println("================================================");
+        
         emailService.sendPasswordResetEmail(user.getEmail(), user.getFirstName(), resetLink);
 
     }

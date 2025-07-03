@@ -25,6 +25,7 @@ function ResetPasswordRequest() {
       }
     } catch (err) {
       setError('Network error. Please try again.');
+      console.log(err);
     }
   };
 
@@ -42,7 +43,7 @@ function ResetPasswordRequest() {
           />
         </label>
         <br />
-        <button type="submit">Send Reset Link</button>
+        <button type="submit"> Link</button>
       </form>
       {message && <p style={{ color: 'green' }}>{message}</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}
